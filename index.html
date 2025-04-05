@@ -10,21 +10,43 @@
     <button onclick="checkOddOrEven()">Check</button>
     <p id="result"></p>
 
-    <script src="./main.js"></script>
     <script>
-      function checkOddOrEven() {
+      async function checkOddOrEven() {
         const number = parseInt(
           document.getElementById("numberInput").value,
           10
         );
         const resultElement = document.getElementById("result");
 
+        if (isNaN(number) || number < 1 || number > 50000000) {
+          resultElement.textContent =
+            "Please enter a number between 1 and 50,000,000.";
+          return;
+        }
+
+        const chunkSize = 1000000;
+        const start = Math.floor((number - 1) / chunkSize) * chunkSize + 1;
+        const end = start + chunkSize - 1;
+
+        const chunkFile = `chunks/oddOrEven_${start}_to_${end}.js`;
+
         try {
+          // Remove previously defined oddOrEven function if it exists
+          delete window.oddOrEven;
+
+          // Dynamically load the correct script
+          await import(`./${chunkFile}?cacheBust=${Date.now()}`);
+
+          if (typeof oddOrEven !== "function") {
+            throw new Error("oddOrEven function not found in chunk.");
+          }
+
           const result = oddOrEven(number);
           resultElement.textContent = `The number ${number} is ${result}.`;
         } catch (e) {
+          console.error(e);
           resultElement.textContent =
-            "Error: Number is out of range or not valid.";
+            "Error: Unable to load chunk or resolve number.";
         }
       }
     </script>
